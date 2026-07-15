@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thirty Technologies — Systematic Trading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#060811;
+    --text:#edf0f7;
+    --muted:#8a93a8;
+    --violet:#7c5cff;
+    --coral:#ff6b5e;
+    --glass:rgba(14,18,32,.62);
+    --glass-line:rgba(124,92,255,.25);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--void);
+    color:var(--text);
+    font-family:'Instrument Sans',system-ui,sans-serif;
+    font-size:16.5px;line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--violet);color:#fff;}
+  a{color:var(--text);}
+  a:focus-visible{outline:2px solid var(--violet);outline-offset:3px;}
+
+  #scene{position:fixed;inset:0;z-index:0;}
+  #scene canvas{display:block;}
+  /* static fallback if WebGL never boots */
+  #scene.fallback{
+    background:
+      radial-gradient(120% 90% at 70% 110%, rgba(255,107,94,.24), transparent 55%),
+      radial-gradient(100% 80% at 20% 100%, rgba(124,92,255,.3), transparent 60%),
+      var(--void);
+  }
+  .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(120% 120% at 50% 40%, transparent 55%, rgba(6,8,17,.85) 100%);}
+
+  .content{position:relative;z-index:2;}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 28px;}
+
+  /* nav */
+  header{position:fixed;top:0;left:0;right:0;z-index:5;}
+  .bar{display:flex;justify-content:space-between;align-items:center;padding:22px 28px;}
+  .brand{
+    font-family:'Unbounded',sans-serif;font-weight:700;font-size:13px;
+    letter-spacing:.22em;text-decoration:none;
+  }
+  .brand em{font-style:normal;background:linear-gradient(90deg,var(--violet),var(--coral));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  nav{display:flex;gap:26px;font-size:13px;letter-spacing:.06em;}
+  nav a{color:var(--muted);text-decoration:none;}
+  nav a:hover{color:var(--text);}
+  @media (max-width:640px){nav{display:none;}}
+
+  /* hero */
+  .hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:120px 0 80px;
+    background:radial-gradient(70% 80% at 32% 52%, rgba(6,8,17,.9), transparent 75%);}
+  .hero h1, .hero p, .eyebrow{text-shadow:0 2px 24px rgba(6,8,17,.9);}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.3em;
+    color:var(--muted);margin-bottom:26px;text-transform:uppercase;
+  }
+  .hero h1{
+    font-family:'Unbounded',sans-serif;font-weight:300;
+    font-size:clamp(30px,5.4vw,58px);line-height:1.18;max-width:17ch;
+    text-wrap:balance;
+  }
+  .hero h1 b{font-weight:700;background:linear-gradient(90deg,var(--violet),var(--coral));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .hero p{max-width:52ch;color:var(--muted);margin-top:28px;font-size:17px;}
+  .scrollhint{
+    margin-top:64px;font-family:'IBM Plex Mono',monospace;font-size:11px;
+    letter-spacing:.28em;color:var(--muted);
+  }
+  .scrollhint::after{content:"↓";display:inline-block;margin-left:10px;animation:dip 2.2s ease-in-out infinite;}
+  @keyframes dip{50%{transform:translateY(5px);}}
+
+  /* panels */
+  section{padding:90px 0;}
+  .panel{
+    background:var(--glass);border:1px solid var(--glass-line);border-radius:18px;
+    padding:clamp(28px,5vw,56px);backdrop-filter:blur(14px);
+  }
+  h2{
+    font-family:'Unbounded',sans-serif;font-weight:500;
+    font-size:clamp(20px,2.8vw,30px);line-height:1.3;margin-bottom:22px;max-width:24ch;
+  }
+  .k{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.28em;
+    color:var(--coral);text-transform:uppercase;display:block;margin-bottom:16px;
+  }
+  .panel p{color:#c3c9d8;max-width:64ch;margin-bottom:14px;}
+  .panel p:last-child{margin-bottom:0;}
+  .panel p b{color:var(--text);}
+
+  /* horizons */
+  .chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:34px;}
+  .chip{
+    border:1px solid rgba(138,147,168,.28);border-radius:14px;padding:20px 22px;
+    background:rgba(6,8,17,.4);transition:border-color .25s, transform .25s;
+  }
+  .chip:hover{border-color:var(--violet);transform:translateY(-3px);}
+  .chip h3{font-family:'Unbounded',sans-serif;font-weight:500;font-size:14px;margin-bottom:8px;}
+  .chip .h{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;
+    color:var(--muted);display:block;margin-bottom:12px;text-transform:uppercase;}
+  .chip p{font-size:13.5px;color:var(--muted);margin:0;}
+
+  /* pipeline steps */
+  .steps{margin-top:30px;display:grid;gap:0;}
+  .step{display:grid;grid-template-columns:52px 1fr;gap:20px;padding:20px 0;
+    border-bottom:1px solid rgba(138,147,168,.16);}
+  .step:last-child{border-bottom:none;}
+  .step .n{
+    font-family:'Unbounded',sans-serif;font-weight:700;font-size:15px;
+    background:linear-gradient(180deg,var(--violet),var(--coral));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .step h3{font-size:15.5px;font-weight:600;margin-bottom:4px;}
+  .step p{font-size:14px;color:var(--muted);max-width:56ch;margin:0;}
+  .motto{
+    margin-top:34px;font-family:'Unbounded',sans-serif;font-weight:300;
+    font-size:clamp(16px,2.2vw,21px);
+  }
+  .motto b{font-weight:700;background:linear-gradient(90deg,var(--violet),var(--coral));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+
+  /* principles */
+  .nots{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:30px;}
+  .not{border:1px solid rgba(255,107,94,.3);border-radius:14px;padding:20px 22px;background:rgba(6,8,17,.4);}
+  .not h3{font-size:14.5px;font-weight:600;margin-bottom:8px;color:var(--text);}
+  .not h3::before{content:"✕ ";color:var(--coral);}
+  .not p{font-size:13.5px;color:var(--muted);margin:0;}
+
+  footer{position:relative;z-index:2;padding:40px 0 60px;}
+  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    color:var(--muted);font-size:13px;font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    .scrollhint::after{animation:none;}
+    .chip, .chip:hover{transition:none;transform:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="scene" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<header>
+  <div class="bar">
+    <a class="brand" href="#top">THIRTY<em>·</em>TECHNOLOGIES</a>
+    <nav aria-label="Sections">
+      <a href="#firm">The firm</a>
+      <a href="#universe">Strategies</a>
+      <a href="#process">Process</a>
+      <a href="#principles">Principles</a>
+    </nav>
+  </div>
+</header>
+
+<div class="content" id="top">
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="eyebrow">Systematic · Proprietary · Indian Markets</div>
+      <h1>We don't predict the market. We build <b>systems that survive it.</b></h1>
+      <p>Thirty Technologies is a proprietary systematic trading firm. Rules-based strategies across four time horizons, run end-to-end by infrastructure we built ourselves — trading NIFTY, BANKNIFTY and SENSEX derivatives and liquid NSE equities.</p>
+      <div class="scrollhint">THE SURFACE BELOW IS WHERE WE WORK</div>
+    </div>
+
+    <section id="firm">
+      <div class="panel">
+        <span class="k">01 — The firm</span>
+        <h2>Decision quality over price prediction.</h2>
+        <p>Every position follows a <b>predefined rule set</b> — researched, validated, and risk-gated before it ever touches capital. We trade our own book: no outside investors, no advisory, no signals for sale. This site is a front office, not a pitch.</p>
+        <p>Our first objective is survival. <b>Returns follow consistency.</b></p>
+      </div>
+    </section>
+
+    <section id="universe">
+      <div class="panel">
+        <span class="k">02 — Strategy universe</span>
+        <h2>Four horizons, one regime-aware brain.</h2>
+        <p>A shared AI-driven regime layer classifies conditions as trending, mean-reverting or volatile, and every strategy listens. The portfolio diversifies across time itself:</p>
+        <div class="chips">
+          <div class="chip"><span class="h">Hours</span><h3>Intraday</h3><p>Directional &amp; volatility strategies on index derivatives. Flat by close.</p></div>
+          <div class="chip"><span class="h">Days</span><h3>Weekly</h3><p>Index options strategies built around the weekly expiry cycle.</p></div>
+          <div class="chip"><span class="h">Weeks</span><h3>Monthly</h3><p>Options selling and swing positions in liquid names.</p></div>
+          <div class="chip"><span class="h">Years</span><h3>Multi-year</h3><p>Systematic trend participation. Patient by design.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="process">
+      <div class="panel">
+        <span class="k">03 — From research to live</span>
+        <h2>Most strategies never make it. That's the point.</h2>
+        <div class="steps">
+          <div class="step"><span class="n">01</span><div><h3>Research</h3><p>Hypotheses grounded in market structure, not curve-fit patterns.</p></div></div>
+          <div class="step"><span class="n">02</span><div><h3>Backtesting</h3><p>Walk-forward analysis and Monte Carlo robustness, always net of costs.</p></div></div>
+          <div class="step"><span class="n">03</span><div><h3>Forward testing</h3><p>Dummy orders against live markets — fills must happen at signal time, or the backtest was fiction.</p></div></div>
+          <div class="step"><span class="n">04</span><div><h3>Hand-held live</h3><p>Minimal capital, maximal supervision, line-by-line parity with the backtest.</p></div></div>
+          <div class="step"><span class="n">05</span><div><h3>Autonomous</h3><p>Gradual scale-up under continuous monitoring and hard, machine-enforced limits.</p></div></div>
+        </div>
+        <p class="motto">Capital <b>earns</b> the right to be deployed.</p>
+      </div>
+    </section>
+
+    <section id="systems">
+      <div class="panel">
+        <span class="k">04 — Systems</span>
+        <h2>Built in-house, end to end.</h2>
+        <p>Real-time websocket market data flowing into a time-series datastore. A strategy engine, order management and scheduling that take a signal to a routed order in <b>roughly one second</b> — no human in the loop. Multi-broker connectivity for redundancy, containerised cloud infrastructure, and a monitoring layer watching heartbeats, data freshness and end-of-day reconciliation.</p>
+        <p>Machine learning where it earns its keep; production engineering everywhere.</p>
+      </div>
+    </section>
+
+    <section id="principles">
+      <div class="panel">
+        <span class="k">05 — What we don't do</span>
+        <h2>The constraints are the strategy.</h2>
+        <div class="nots">
+          <div class="not"><h3>Discretionary trades</h3><p>If it isn't in the rule set, it doesn't happen.</p></div>
+          <div class="not"><h3>Prediction bets</h3><p>We size for distributions of outcomes, not forecasts.</p></div>
+          <div class="not"><h3>Uncapped downside</h3><p>Capital protection is non-negotiable, enforced in software.</p></div>
+          <div class="not"><h3>Outside capital</h3><p>No clients, no funds, no signals. Our own book only.</p></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 THIRTY TECHNOLOGIES</span>
+    <span>desk@thirtytechnologies.example <!-- placeholder --></span>
+  </div>
+</footer>
+
+<script type="importmap">
+  {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const holder = document.getElementById('scene');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+} catch (e) {
+  holder.classList.add('fallback');
+  throw e;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+holder.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x060811, 0.02);
+
+const camera = new THREE.PerspectiveCamera(52, window.innerWidth/window.innerHeight, 0.1, 400);
+camera.position.set(0, 14, 42);
+
+// ---- the volatility surface -------------------------------------------
+// x = strike axis (moneyness), y = term axis (expiry), z = implied vol
+const W = 90, D = 64, SX = 110, SD = 78;
+const geo = new THREE.PlaneGeometry(SX, SD, W, D);
+geo.rotateX(-Math.PI/2);
+
+const pos = geo.attributes.position;
+const colors = new Float32Array(pos.count * 3);
+geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+// height → colour ramp: deep indigo → violet → coral → pale amber
+const stops = [
+  [0.00, 0x2a2160], [0.35, 0x5940c9], [0.62, 0x9a5cff],
+  [0.82, 0xff6b5e], [1.00, 0xffc38a]
+].map(([t,h]) => [t, new THREE.Color(h)]);
+function ramp(t, out){
+  for (let i = 1; i < stops.length; i++){
+    if (t <= stops[i][0]){
+      const [t0,c0] = stops[i-1], [t1,c1] = stops[i];
+      out.copy(c0).lerp(c1, (t - t0) / (t1 - t0));
+      return out;
+    }
+  }
+  out.copy(stops[stops.length-1][1]); return out;
+}
+
+const tmp = new THREE.Color();
+let zMin = Infinity, zMax = -Infinity;
+function surfaceHeight(x, y, t){
+  const m = x / (SX*0.5);            // moneyness  -1..1
+  const term = (y / (SD*0.5) + 1)/2; // 0 near expiry → 1 far
+  const smile = (m*m) * 9 * (1 - 0.45*term);       // vol smile, flattening with term
+  const skew  = -m * 2.6 * (1 - 0.3*term);         // put skew
+  const breath = Math.sin(t*0.5) * 0.8 * (m*m);    // smile breathing
+  const wave = Math.sin(m*4.5 + t*0.9) * Math.cos(term*5 - t*0.6) * 0.9;
+  return smile + skew + breath + wave + 2.2;
+}
+
+function updateSurface(t){
+  zMin = Infinity; zMax = -Infinity;
+  for (let i = 0; i < pos.count; i++){
+    const z = surfaceHeight(pos.getX(i), pos.getZ(i), t);
+    pos.setY(i, z);
+    if (z < zMin) zMin = z;
+    if (z > zMax) zMax = z;
+  }
+  const span = (zMax - zMin) || 1;
+  for (let i = 0; i < pos.count; i++){
+    ramp((pos.getY(i) - zMin) / span, tmp);
+    colors[i*3] = tmp.r; colors[i*3+1] = tmp.g; colors[i*3+2] = tmp.b;
+  }
+  pos.needsUpdate = true;
+  geo.attributes.color.needsUpdate = true;
+}
+
+const points = new THREE.Points(geo, new THREE.PointsMaterial({
+  size: 0.38, vertexColors: true, transparent: true, opacity: 0.95,
+  blending: THREE.AdditiveBlending, depthWrite: false
+}));
+const wire = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+  wireframe: true, vertexColors: true, transparent: true, opacity: 0.10
+}));
+const group = new THREE.Group();
+group.add(points); group.add(wire);
+group.position.y = -8;
+scene.add(group);
+
+// ---- interaction -------------------------------------------------------
+let mx = 0, my = 0;
+addEventListener('pointermove', e => {
+  mx = (e.clientX / innerWidth - 0.5);
+  my = (e.clientY / innerHeight - 0.5);
+}, { passive:true });
+
+let scrollY = 0;
+addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive:true });
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+const clock = new THREE.Clock();
+function frame(){
+  const t = clock.getElapsedTime();
+  updateSurface(t);
+  group.rotation.y = t * 0.05 + mx * 0.25;
+  const dive = Math.min(scrollY / Math.max(document.body.scrollHeight - innerHeight, 1), 1);
+  camera.position.y = 14 - my * 3 - dive * 7;
+  camera.position.z = 42 - dive * 9;
+  camera.lookAt(0, -2, 0);
+  renderer.render(scene, camera);
+}
+
+if (reduce){
+  updateSurface(0.7);
+  frame();
+} else {
+  renderer.setAnimationLoop(frame);
+}
+</script>
+</body>
+</html>
